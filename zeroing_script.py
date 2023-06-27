@@ -70,34 +70,10 @@ for row in protocol.index:
     for channel in channels:
         # note: for some reason the "raw data" column names have 2 spaces in front
         channel_data = raw["  I-" + channel]
-
-        # first iteration code:
-
-        # time_data = raw["Time"]
-        # # find indeces of relavent time points for averaging 
-        # # (if statements avoid errors if the time was skipped)
-        # if (time - 60) in set(time_data):
-        #     start = time_data[time_data == (time - 60)].index[0]
-        # else:
-        #     start = time_data[time_data == (time - 61)].index[0]
-
-        # if time in set(time_data):
-        #     stop = time_data[time_data == time].index[0]
-        # else:
-        #     stop = time_data[time_data == (time - 1)].index[0]
-
-        # # calculate average current 1 min before infusion
-        # avg_current = mean(channel_data[start:stop])
-
         avg_current = mean(least_sd(channel_data, time))
 
         # find the time of next infusion for the drug
         for row2 in protocol.index:
-            # print(channel)
-            # print(protocol["Tissues"][row2].find(channel))
-            # print(protocol["Tissues"][row2])
-            # print(row2 > row and protocol["Tissues"][row2].find(channel) >= 0)
-            
             if row2 > row and protocol["Tissues"][row2].find(channel) >= 0:
                 end = protocol["Time"][row2]
                 break
