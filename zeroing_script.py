@@ -53,7 +53,7 @@ for row in protocol.index:
     max_min_index.append("MIN " + drug)
 
 # create a column list for the max/min dataframe
-max_min_cols = ['1', '2', '3', '4', '5', '6']
+max_min_cols = ['1', '1 time', '2', '2 time', '3', '3 time', '4', '4 time', '5', '5 time', '6', '6 time']
 
 # add sheet for max/min data
 output["Max_Min Values"] = pd.DataFrame(index = max_min_index, columns = max_min_cols)
@@ -93,7 +93,10 @@ for row in protocol.index:
 
         # add value to sheet for max/min data
         output["Max_Min Values"][channel]["MAX " + drug] = altered_data_df.max()
+        output["Max_Min Values"][channel + " time"]["MAX " + drug] = altered_data_df.idxmax()
         output["Max_Min Values"][channel]["MIN " + drug] = altered_data_df.min()
+        output["Max_Min Values"][channel + " time"]["MIN " + drug] = altered_data_df.idxmin()
+
 
     # save the altered data to the sheet
     # note: the sheet names can't be > 31 char
