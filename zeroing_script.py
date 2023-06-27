@@ -46,6 +46,9 @@ max_min_index = []
 for row in protocol.index:
     # extract drug name
     drug = protocol["Element"][row]
+    # if the drug is ATP, break out of the process
+    if "ATP" in drug:
+        break
     max_min_index.append("MAX " + drug)
     max_min_index.append("MIN " + drug)
 
@@ -59,6 +62,9 @@ output["Max_Min Values"] = pd.DataFrame(index = max_min_index, columns = max_min
 for row in protocol.index:
     # extract drug name
     drug = protocol["Element"][row]
+    # if the drug is ATP, break out of the process
+    if "ATP" in drug:
+        break
     # extract time it was added
     time = protocol["Time"][row]
     # extract relevant channels
