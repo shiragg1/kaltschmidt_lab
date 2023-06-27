@@ -14,4 +14,4 @@ these can all be installed with `pip3 install <package>`
 
 ### run the script
 
-the script can be run from command line `/path/to/script/
+the script can be run from command line `/path/to/script/`
