@@ -50,7 +50,7 @@ for row in protocol.index:
     max_min_index.append("MIN " + drug)
 
 # create a column list for the max/min dataframe
-max_min_cols = {'1', '2', '3', '4', '5', '6'}
+max_min_cols = ['1', '2', '3', '4', '5', '6']
 
 # add sheet for max/min data
 output["Max_Min Values"] = pd.DataFrame(index = max_min_index, columns = max_min_cols)
