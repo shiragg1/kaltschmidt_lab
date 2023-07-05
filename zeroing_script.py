@@ -80,7 +80,12 @@ for row in protocol.index:
 
         # find the time of next infusion for the drug
         for row2 in protocol.index:
-            if row2 > row and protocol["Tissues"][row2].find(channel) >= 0:
+            # condition for having one tissue in the row
+            if type(protocol["Tissues"][row2]) == int:
+                if row2 > row and protocol["Tissues"][row2] >= 0:
+                    end = protocol["Time"][row2]
+                    break
+            elif row2 > row and protocol["Tissues"][row2].find(channel) >= 0:
                 end = protocol["Time"][row2]
                 break
 
