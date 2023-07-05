@@ -97,10 +97,10 @@ for row in protocol.index:
         alt = pd.concat([alt, altered_data], axis=1)
 
         # add value to sheet for max/min data
-        output["Max_Min Values"][channel]["MAX " + drug] = altered_data_df.max()
-        output["Max_Min Values"][channel + " time"]["MAX " + drug] = altered_data_df.idxmax()
-        output["Max_Min Values"][channel]["MIN " + drug] = altered_data_df.min()
-        output["Max_Min Values"][channel + " time"]["MIN " + drug] = altered_data_df.idxmin()
+        output["Max_Min Values"][channel]["MAX " + drug] = altered_data_df[channel].max()
+        output["Max_Min Values"][channel + " time"]["MAX " + drug] = altered_data_df[channel].idxmax()
+        output["Max_Min Values"][channel]["MIN " + drug] = altered_data_df[channel].min()
+        output["Max_Min Values"][channel + " time"]["MIN " + drug] = altered_data_df[channel].idxmin()
 
 
     # save the altered data to the sheet
