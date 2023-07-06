@@ -71,7 +71,8 @@ for row in protocol.index:
     # extract time it was added
     time = protocol["Time"][row]
     # extract relevant channels
-    channels = protocol["Tissues"][row].split()
+    # note: must be a cast to string for edge case that there is just one channel
+    channels = str(protocol["Tissues"][row]).split()
     # create a dataframe for the drug's altered data
     alt = pd.DataFrame()
 
@@ -84,13 +85,15 @@ for row in protocol.index:
         # find the time of next infusion for the drug
         for row2 in protocol.index:
             # condition for having one tissue in the row
-            if type(protocol["Tissues"][row2]) == int:
-                if row2 > row and protocol["Tissues"][row2] >= 0:
+            if isinstance(protocol["Tissues"][row2], int):
+                if row2 > row and str(protocol["Tissues"][row2]) == channel:
                     end = protocol["Time"][row2]
                     break
             elif row2 > row and protocol["Tissues"][row2].find(channel) >= 0:
                 end = protocol["Time"][row2]
                 break
+            else:
+                end = raw.index[-1]
 
         # define a series for the altered data
         altered_data = channel_data[time:end].apply(lambda x : x - avg_current)
@@ -98,13 +101,12 @@ for row in protocol.index:
         altered_data_df = pd.DataFrame({channel: altered_data})
         # add the altered data to the main DataFrame
         alt = pd.concat([alt, altered_data], axis=1)
-
+        
         # add value to sheet for max/min data
         output["Max_Min Values"][channel]["MAX " + drug] = altered_data_df[channel].max()
         output["Max_Min Values"][channel + " time"]["MAX " + drug] = altered_data_df[channel].idxmax()
         output["Max_Min Values"][channel]["MIN " + drug] = altered_data_df[channel].min()
         output["Max_Min Values"][channel + " time"]["MIN " + drug] = altered_data_df[channel].idxmin()
-
 
     # save the altered data to the sheet
     # note: the sheet names can't be > 31 char
