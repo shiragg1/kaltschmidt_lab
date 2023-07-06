@@ -58,6 +58,9 @@ max_min_cols = ['1', '1 time', '2', '2 time', '3', '3 time', '4', '4 time', '5',
 # add sheet for max/min data
 output["Max_Min Values"] = pd.DataFrame(index = max_min_index, columns = max_min_cols)
 
+# create a list to keep track of new sheet names
+new_sheets = []
+
 # iterate through the protocol rows
 for row in protocol.index:
     # extract drug name
@@ -106,6 +109,8 @@ for row in protocol.index:
     # save the altered data to the sheet
     # note: the sheet names can't be > 31 char
     output[drug[:30]] = alt
+    # add the name to list of new sheets
+    new_sheets.append(drug[:30])
 
 # remove the .xls from the file name
 file_name = file.split('.', 1)[0]
@@ -114,5 +119,24 @@ file_name = file.split('.', 1)[0]
 with pd.ExcelWriter(file_name + "_alt.xlsx", engine='xlsxwriter') as writer:
     for ws_name, df_sheet in output.items():
         df_sheet.to_excel(writer, sheet_name=ws_name)
+        # add a chart to sheets in the protocol
+        if ws_name in new_sheets:
+            workbook = writer.book
+            worksheet = writer.sheets[ws_name]
+            chart = workbook.add_chart({'type': 'line'})
+
+            start_time = df_sheet.index[1]
+            end_time = df_sheet.index[-1]
+            for i in range(len(df_sheet.columns)):
+                col = i + 1
+                chart.add_series({
+                    'name':       [ws_name, 0, col],
+                    'categories': [ws_name, 1, 0, end_time, 0],
+                    'values':     [ws_name, 1, col, end_time - start_time, col]
+                })
+
+            chart.set_x_axis({'name': 'Time', 'min': start_time, 'max': end_time})
+            chart.set_y_axis({'name': 'Current'})
+            worksheet.insert_chart('K2', chart)
 
 print('the altered data has been output to ', file_name, "_alt.xlsx")
