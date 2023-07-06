@@ -137,8 +137,8 @@ with pd.ExcelWriter(file_name + "_alt.xlsx", engine='xlsxwriter') as writer:
                     'values':     [ws_name, 1, col, end_time - start_time, col]
                 })
 
-            chart.set_x_axis({'name': 'Time', 'min': start_time, 'max': end_time})
-            chart.set_y_axis({'name': 'Current'})
+            chart.set_x_axis({'name': 'Time (sec)', 'min': start_time, 'max': end_time})
+            chart.set_y_axis({'name': 'Normalized Current (a.u.)'})
             worksheet.insert_chart('K2', chart)
 
 print('the altered data has been output to ', file_name, "_alt.xlsx")
