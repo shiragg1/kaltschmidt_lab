@@ -15,3 +15,5 @@ These can all be installed with `pip3 install <package>`
 The script can be run from command line with `/path/to/script/`.
 
 You will be prompted to provide the path to the excel sheet. Make sure to include the `.xls` behind the file name.
+
+You will also be asked to provide the rate that data was taken by the Ussing chamber software. If it was every second, enter `1`. If it was every 5 seconds, enter `5`. And so on.
