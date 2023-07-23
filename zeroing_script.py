@@ -12,7 +12,6 @@ def least_sd(data, time, rate):
             rate refers to the amount of time between each reading
     """
     start = time-300//rate
-    print(start)
     end = time-240//rate
 
     # set the default range to 5 minutes before infusion
@@ -78,9 +77,7 @@ for row in protocol.index:
         break
     # extract time it was added
     time = protocol["Time"][row]
-    print(raw["Time"][raw["Time"]==time].index.values)
     time_index = raw["Time"][raw["Time"]==time].index.values[0]
-    print(time_index)
     # extract relevant channels
     # note: must be a cast to string for edge case that there is just one channel
     channels = str(protocol["Tissues"][row]).split()
@@ -91,7 +88,6 @@ for row in protocol.index:
     for channel in channels:
         # note: for some reason the "raw data" column names have 2 spaces in front
         channel_data = raw["  I-" + channel]
-        print(least_sd(channel_data, time, rate))
         avg_current = mean(least_sd(channel_data, time_index, rate))
 
         # find the time of next infusion for the drug
@@ -116,9 +112,9 @@ for row in protocol.index:
         
         # add value to sheet for max/min data
         output["Max_Min Values"][channel]["MAX " + drug] = altered_data_df[channel].max()
-        output["Max_Min Values"][channel + " time"]["MAX " + drug] = altered_data_df[channel].idxmax()
+        output["Max_Min Values"][channel + " time"]["MAX " + drug] = raw["Time"][altered_data_df[channel].idxmax()]
         output["Max_Min Values"][channel]["MIN " + drug] = altered_data_df[channel].min()
-        output["Max_Min Values"][channel + " time"]["MIN " + drug] = altered_data_df[channel].idxmin()
+        output["Max_Min Values"][channel + " time"]["MIN " + drug] = raw["Time"][altered_data_df[channel].idxmin()]
 
     # save the altered data to the sheet
     # note: the sheet names can't be > 31 char
