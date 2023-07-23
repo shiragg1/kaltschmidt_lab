@@ -5,21 +5,25 @@ from statistics import mean
 import numpy as np
 
 
-def least_sd(data, time):
+def least_sd(data, time, rate):
     """
     function to find the region within the 5 minutes prior to an infusion time
     inputs: dataset in the form of a list and the infusion time
+            rate refers to the amount of time between each reading
     """
+    start = time-300//rate
+    print(start)
+    end = time-240//rate
 
     # set the default range to 5 minutes before infusion
-    range = data[time-300:time-240]
+    range = data[start:end]
     # iterate through the 5 minutes before (in 10 second intervals)
-    i = time - 240
-    while i <= time - 60:
-        # check if the stnadard deviation of each range is less than the previous
-        if np.std(data[i:i+60]) > np.std(range):
-            range = data[i:i+60]
-        i+=10
+    i = time - 240//rate
+    while i <= time - 60//rate:
+        # check if the standard deviation of each range is less than the previous
+        if np.std(data[i:i+60//rate]) > np.std(range):
+            range = data[i:i+60//rate]
+        i+=10//rate
     # output the best range
     return range
 
@@ -30,6 +34,10 @@ def least_sd(data, time):
 # get file from terminal input
 print("please type the file name (and path)")
 file = str(input())
+
+# get the rate the ussing chamber was set to
+print("what was the rate of data retrieval?")
+rate = int(input())
 
 # load the sheet
 output = pd.read_excel(file, sheet_name = None)
@@ -70,6 +78,9 @@ for row in protocol.index:
         break
     # extract time it was added
     time = protocol["Time"][row]
+    print(raw["Time"][raw["Time"]==time].index.values)
+    time_index = raw["Time"][raw["Time"]==time].index.values[0]
+    print(time_index)
     # extract relevant channels
     # note: must be a cast to string for edge case that there is just one channel
     channels = str(protocol["Tissues"][row]).split()
@@ -80,7 +91,8 @@ for row in protocol.index:
     for channel in channels:
         # note: for some reason the "raw data" column names have 2 spaces in front
         channel_data = raw["  I-" + channel]
-        avg_current = mean(least_sd(channel_data, time))
+        print(least_sd(channel_data, time, rate))
+        avg_current = mean(least_sd(channel_data, time_index, rate))
 
         # find the time of next infusion for the drug
         for row2 in protocol.index:
@@ -96,7 +108,7 @@ for row in protocol.index:
                 end = raw.index[-1]
 
         # define a series for the altered data
-        altered_data = channel_data[time:end].apply(lambda x : x - avg_current)
+        altered_data = channel_data[time_index:end].apply(lambda x : x - avg_current)
         # create a DataFrame with the altered data
         altered_data_df = pd.DataFrame({channel: altered_data})
         # add the altered data to the main DataFrame
