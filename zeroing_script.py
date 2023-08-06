@@ -83,12 +83,15 @@ for row in protocol.index:
     channels = str(protocol["Tissues"][row]).split()
     # create a dataframe for the drug's altered data
     alt = pd.DataFrame()
-
+   
     # add relevent data to the columns
     for channel in channels:
         # note: for some reason the "raw data" column names have 2 spaces in front
         channel_data = raw["  I-" + channel]
         avg_current = mean(least_sd(channel_data, time_index, rate))
+
+        # keep track of the latest time point in the set
+        last_end = 0
 
         # find the time of next infusion for the drug
         for row2 in protocol.index:
@@ -103,6 +106,10 @@ for row in protocol.index:
             else:
                 end = raw.index[-1]
 
+        # check if this is the latest time point
+        if end > last_end:
+            last_end = end
+
         # define a series for the altered data
         altered_data = channel_data[time_index:end].apply(lambda x : x - avg_current)
         # create a DataFrame with the altered data
@@ -115,6 +122,13 @@ for row in protocol.index:
         output["Max_Min Values"][channel + " time"]["MAX " + drug] = raw["Time"][altered_data_df[channel].idxmax()]
         output["Max_Min Values"][channel]["MIN " + drug] = altered_data_df[channel].min()
         output["Max_Min Values"][channel + " time"]["MIN " + drug] = raw["Time"][altered_data_df[channel].idxmin()]
+
+    # add column with time points
+    time_points = raw["Time"][time_index:end]
+    # subtract the first time so it starts at zero
+    time_points = time_points - time_index
+    # add the time data to the main DataFrame
+    alt = pd.concat([time_points, alt], axis=1)
 
     # save the altered data to the sheet
     # note: the sheet names can't be > 31 char
@@ -138,10 +152,10 @@ with pd.ExcelWriter(file_name + "_alt.xlsx", engine='xlsxwriter') as writer:
             start_time = df_sheet.index[1]
             end_time = df_sheet.index[-1]
             for i in range(len(df_sheet.columns)):
-                col = i + 1
+                col = i + 2
                 chart.add_series({
                     'name':       [ws_name, 0, col],
-                    'categories': [ws_name, 1, 0, end_time, 0],
+                    'categories': [ws_name, 1, 1, end_time, 1],
                     'values':     [ws_name, 1, col, end_time - start_time, col]
                 })
 
