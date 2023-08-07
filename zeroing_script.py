@@ -47,6 +47,9 @@ raw = pd.read_excel(file, sheet_name = 'raw data', header = 1)
 # load the protocol
 protocol = pd.read_excel(file, sheet_name = 'protocol', header = 1)
 
+# create a new protocol with duplicates merged
+merged_protocol = dict(drug = [], rows = [])
+
 # create a list of drugs for the max/min sheet
 max_min_index = []
 # iterate through the protocol rows to get the list of drugs
@@ -119,9 +122,9 @@ for row in protocol.index:
         
         # add value to sheet for max/min data
         output["Max_Min Values"][channel]["MAX " + drug] = altered_data_df[channel].max()
-        output["Max_Min Values"][channel + " time"]["MAX " + drug] = raw["Time"][altered_data_df[channel].idxmax()]
+        output["Max_Min Values"][channel + " time"]["MAX " + drug] = raw["Time"][altered_data_df[channel].idxmax()]-time_index
         output["Max_Min Values"][channel]["MIN " + drug] = altered_data_df[channel].min()
-        output["Max_Min Values"][channel + " time"]["MIN " + drug] = raw["Time"][altered_data_df[channel].idxmin()]
+        output["Max_Min Values"][channel + " time"]["MIN " + drug] = raw["Time"][altered_data_df[channel].idxmin()]-time_index
 
     # add column with time points
     time_points = raw["Time"][time_index:end]
