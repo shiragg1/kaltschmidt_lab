@@ -47,20 +47,27 @@ raw = pd.read_excel(file, sheet_name = 'raw data', header = 1)
 # load the protocol
 protocol = pd.read_excel(file, sheet_name = 'protocol', header = 1)
 
-# create a new protocol with duplicates merged
-merged_protocol = dict(drug = [], rows = [])
+# create a list of the drugs used to merge duplicates in the protocol
+drugs = []
+rows = []
 
 # create a list of drugs for the max/min sheet
 max_min_index = []
+
 # iterate through the protocol rows to get the list of drugs
 for row in protocol.index:
     # extract drug name
     drug = protocol["Element"][row]
-    # if the drug is ATP, break out of the process
-    if "ATP" in drug:
-        break
-    max_min_index.append("MAX " + drug)
-    max_min_index.append("MIN " + drug)
+    # check if the drug is already in the protocol and if so add the row
+    if drug in drugs:
+        index = drugs.index(drug)
+        rows[index].append(row)
+    # otherwise add the drug to the list
+    else:
+        drugs.append(drug)
+        rows.append([row])
+        max_min_index.append("MAX " + drug)
+        max_min_index.append("MIN " + drug)
 
 # create a column list for the max/min dataframe
 max_min_cols = ['1', '1 time', '2', '2 time', '3', '3 time', '4', '4 time', '5', '5 time', '6', '6 time']
@@ -71,67 +78,79 @@ output["Max_Min Values"] = pd.DataFrame(index = max_min_index, columns = max_min
 # create a list to keep track of new sheet names
 new_sheets = []
 
-# iterate through the protocol rows
-for row in protocol.index:
+# iterate through the drugs
+for i in range(len(drugs)):
     # extract drug name
-    drug = protocol["Element"][row]
-    # if the drug is ATP, break out of the process
-    if "ATP" in drug:
-        break
-    # extract time it was added
-    time = protocol["Time"][row]
-    time_index = raw["Time"][raw["Time"]==time].index.values[0]
-    # extract relevant channels
-    # note: must be a cast to string for edge case that there is just one channel
-    channels = str(protocol["Tissues"][row]).split()
+    drug = drugs[i]
     # create a dataframe for the drug's altered data
     alt = pd.DataFrame()
-   
-    # add relevent data to the columns
-    for channel in channels:
-        # note: for some reason the "raw data" column names have 2 spaces in front
-        channel_data = raw["  I-" + channel]
-        avg_current = mean(least_sd(channel_data, time_index, rate))
+
+    #iterate through the protocol rows
+    for row in rows[i]:
+        # extract time it was added
+        time = protocol["Time"][row]
+        time_index = raw.index[raw["Time"]==time].values[0]
+        
+        # extract relevant channels
+        # note: must be a cast to string for case that there is just one channel
+        channels = str(protocol["Tissues"][row]).split()
 
         # keep track of the latest time point in the set
         last_end = 0
 
-        # find the time of next infusion for the drug
-        for row2 in protocol.index:
-            # condition for having one tissue in the row
-            if isinstance(protocol["Tissues"][row2], int):
-                if row2 > row and str(protocol["Tissues"][row2]) == channel:
+        # add relevent data to the columns
+        for channel in channels:
+            # note: for some reason the "raw data" column names have 2 spaces in front
+            channel_data = raw["  I-" + channel]
+            avg_current = mean(least_sd(channel_data, time_index, rate))
+
+            # find the time of next infusion for the drug
+            for row2 in protocol.index:
+                # condition for having one tissue in the row
+                if isinstance(protocol["Tissues"][row2], np.integer) or isinstance(protocol["Tissues"][row2], int):
+                    if row2 > row and str(protocol["Tissues"][row2]) == channel:
+                        end = protocol["Time"][row2]
+                        break
+                    else:
+                        end = raw.index[-1]
+                elif row2 > row and protocol["Tissues"][row2].find(channel) >= 0:
                     end = protocol["Time"][row2]
                     break
-            elif row2 > row and protocol["Tissues"][row2].find(channel) >= 0:
-                end = protocol["Time"][row2]
-                break
-            else:
-                end = raw.index[-1]
+                else:
+                    end = raw.index[-1]
 
-        # check if this is the latest time point
-        if end > last_end:
-            last_end = end
+            # check if this is the latest time point
+            if end > last_end:
+                last_end = end
 
-        # define a series for the altered data
-        altered_data = channel_data[time_index:end].apply(lambda x : x - avg_current)
-        # create a DataFrame with the altered data
-        altered_data_df = pd.DataFrame({channel: altered_data})
-        # add the altered data to the main DataFrame
-        alt = pd.concat([alt, altered_data], axis=1)
-        
-        # add value to sheet for max/min data
-        output["Max_Min Values"][channel]["MAX " + drug] = altered_data_df[channel].max()
-        output["Max_Min Values"][channel + " time"]["MAX " + drug] = raw["Time"][altered_data_df[channel].idxmax()]-time_index
-        output["Max_Min Values"][channel]["MIN " + drug] = altered_data_df[channel].min()
-        output["Max_Min Values"][channel + " time"]["MIN " + drug] = raw["Time"][altered_data_df[channel].idxmin()]-time_index
+            # add column with time points
+            time_points = raw["Time"][time_index:last_end]
+            # subtract the first time so it starts at zero
+            time_points = time_points - time_index
+            time_points = time_points.reset_index(drop=True)
 
-    # add column with time points
-    time_points = raw["Time"][time_index:end]
-    # subtract the first time so it starts at zero
-    time_points = time_points - time_index
-    # add the time data to the main DataFrame
-    alt = pd.concat([time_points, alt], axis=1)
+            # define a series for the altered data
+            altered_data = channel_data[time_index:end].apply(lambda x : x - avg_current)
+            altered_data = altered_data.reset_index(drop=True)
+            # create a DataFrame with the altered data
+            altered_data_df = pd.DataFrame({channel: altered_data})
+            # add the altered data to the main DataFrame
+            alt = pd.concat([alt, altered_data], axis=1)
+            
+            # add value to sheet for max/min data
+            output["Max_Min Values"][channel]["MAX " + drug] = altered_data_df[channel].max()
+            # output["Max_Min Values"][channel + " time"]["MAX " + drug] = raw["Time"][altered_data_df[channel].idxmax()]-time_index
+            output["Max_Min Values"][channel + " time"]["MAX " + drug] = altered_data_df[channel].idxmax()
+            output["Max_Min Values"][channel]["MIN " + drug] = altered_data_df[channel].min()
+            # output["Max_Min Values"][channel + " time"]["MIN " + drug] = raw["Time"][altered_data_df[channel].idxmin()]-time_index
+            output["Max_Min Values"][channel + " time"]["MIN " + drug] = altered_data_df[channel].idxmin()
+
+    # # add column with time points
+    # time_points = raw["Time"][time_index:last_end]
+    # # subtract the first time so it starts at zero
+    # time_points = time_points - time_index
+    # # add the time data to the main DataFrame
+    # alt = pd.concat([time_points, alt], axis=1)
 
     # save the altered data to the sheet
     # note: the sheet names can't be > 31 char
@@ -140,7 +159,7 @@ for row in protocol.index:
     new_sheets.append(drug[:30])
 
 # remove the .xls from the file name
-file_name = file.split('.', 1)[0]
+file_name = file.split('_RawData', 1)[0]
 
 # save file to "output" sheet
 with pd.ExcelWriter(file_name + "_alt.xlsx", engine='xlsxwriter') as writer:
@@ -155,10 +174,10 @@ with pd.ExcelWriter(file_name + "_alt.xlsx", engine='xlsxwriter') as writer:
             start_time = df_sheet.index[1]
             end_time = df_sheet.index[-1]
             for i in range(len(df_sheet.columns)):
-                col = i + 2
+                col = i + 1
                 chart.add_series({
                     'name':       [ws_name, 0, col],
-                    'categories': [ws_name, 1, 1, end_time, 1],
+                    'categories': [ws_name, 1, 0, end_time, 0],
                     'values':     [ws_name, 1, col, end_time - start_time, col]
                 })
 
