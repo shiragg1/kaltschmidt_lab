@@ -47,6 +47,14 @@ raw = pd.read_excel(file, sheet_name = 'raw data', header = 1)
 # load the protocol
 protocol = pd.read_excel(file, sheet_name = 'protocol', header = 1)
 
+# check for missing time points in the protocol
+for row in protocol.index:
+    # extract time
+    time = protocol["Time"][row]
+    while time not in set(raw["Time"]):
+        time = time - 1
+    protocol["Time"].loc[row] = time
+
 # create a list of the drugs used to merge duplicates in the protocol
 drugs = []
 rows = []
@@ -90,7 +98,7 @@ for i in range(len(drugs)):
         # extract time it was added
         time = protocol["Time"][row]
         time_index = raw.index[raw["Time"]==time].values[0]
-        
+
         # extract relevant channels
         # note: must be a cast to string for case that there is just one channel
         channels = str(protocol["Tissues"][row]).split()
